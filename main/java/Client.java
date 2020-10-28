@@ -22,7 +22,7 @@ public class Client extends JFrame {
         setSize(300, 300);
         JPanel panel = new JPanel(new GridLayout(2, 1));
         JButton send = new JButton("SEND");
-        JButton download = new JButton("Download");
+
         JTextField text = new JTextField();
         send.addActionListener(a -> {
             String[] cmd = text.getText().split(" ");
@@ -30,12 +30,16 @@ public class Client extends JFrame {
                 sendFile(cmd[1]);
             }
             if (cmd[0].equals("download")) {
-                getFile(cmd[1]);
+                try {
+                    getFile(cmd[1]);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
         panel.add(text);
         panel.add(send);
-        panel.add(download);
+
         add(panel);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -49,8 +53,27 @@ public class Client extends JFrame {
 
     }
 
-    private void getFile(String fileName) {
+    private void getFile(String fileName) throws IOException {
         // TODO: 27.10.2020
+        try {
+            out.writeUTF("download");
+            out.writeUTF(fileName);
+            File file = new File("client/" + fileName);
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            long size = in.readLong();
+            FileOutputStream fos = new FileOutputStream(file);
+            byte[] buffer = new byte[256];
+            for (int i = 0; i < (size + 255) / 256; i++) {
+                int read = in.read(buffer);
+                fos.write(buffer, 0, read);
+            }
+            fos.close();
+            out.writeUTF("OK");
+        } catch (Exception e) {
+            out.writeUTF("WRONG");
+        }
     }
 
     private void sendFile(String filename) {
